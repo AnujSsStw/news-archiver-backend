@@ -1,14 +1,4 @@
-
-// const puppeteer = require('puppeteer')
 import puppeteer from 'puppeteer';
-// import { storage } from '/Usenirs/zzzZ/Desktop/ne/firebase'
-// const fs = require('fs/promises')
-// import * as fs from 'fs/promises'
-// import { storage } from './firebase';
-// import { uplodad } from './firebase'
-
-
-
 import { initializeApp } from "firebase/app";
 import { getDownloadURL, getStorage, ref, uploadBytes, uploadString } from "firebase/storage";
 import { getFirestore, collection, getDoc, doc, setDoc, updateDoc, arrayUnion } from "firebase/firestore"
@@ -24,53 +14,55 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-
-const storage = getStorage(app);
 const db = getFirestore(app)
-
-
-
 const today = new Date();
 
 
 async function Start() {
-
-
     const browser = await puppeteer.launch({
         headless: true
     });
-    const page = await browser.newPage();
-    page.setDefaultNavigationTimeout(0);
-    await page.goto('https://anujssstw.github.io/Static-page/') //replace the link from which you wanna extract the text and img
+
+    // add different websites here
+
+    const page1 = await browser.newPage();
+    const page2 = await browser.newPage();
+    page1.setDefaultNavigationTimeout(0);
+    await page1.goto('https://www.news18.com/') //replace the link from which you wanna extract the text and img
+    page2.setDefaultNavigationTimeout(0);
+    await page2.goto('https://www.indiatoday.in/') //replace the link from which you wanna extract the text and img
+    // page1.waitForSelector('#__next > div.jsx-368370242.home_wrapper > div:nth-child(1) > div > div.jsx-368370242.left_row > div.jsx-3107391233.top_story > div.jsx-3107391233.top_story_left > div > figure > a.jsx-3107391233.head_story_title > figcaption > h1')
     // await page.screenshot({ path: 'i.png' })
 
-    const data = await page.evaluate(() => {
-        const image = document.querySelectorAll('body > div > section > div:nth-child(1) > div > img')
+    const data1 = await page1.evaluate(() => {
+        const image = document.querySelectorAll('#__next > div.jsx-368370242.home_wrapper > div:nth-child(1) > div > div.jsx-368370242.left_row > div.jsx-3107391233.top_story > div.jsx-3107391233.top_story_left > div > figure > a:nth-child(1) > img')
         const url = Array.from(image).map(x => x.src)
 
         return url;
     })
 
-    const headline = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('body > div > section > div:nth-child(1) > div > h1') // selector which you wanna scrape the text
+    const headline1 = await page1.evaluate(() => {
+        return Array.from(document.querySelectorAll('#__next > div.jsx-368370242.home_wrapper > div:nth-child(1) > div > div.jsx-368370242.left_row > div.jsx-3107391233.top_story > div.jsx-3107391233.top_story_left > div > figure > a.jsx-3107391233.head_story_title > figcaption > h1') // selector which you wanna scrape the text
         ).map(x => x.textContent)
 
     })
 
+    const data2 = await page2.evaluate(() => {
+        const image = document.querySelectorAll('#block-itg-widget-home-page-feature > div > div.featured-post.featured-post-first > a > img')
+        const url = Array.from(image).map(x => x.src);
+
+        return url;
+    })
 
 
+    const headline2 = await page2.evaluate(() => {
+        return Array.from(document.querySelectorAll('#block-itg-widget-home-page-feature > div > div.featured-post.featured-post-first > h2 > a') // selector which you wanna scrape the text
+        ).map(x => x.title)
+
+    })
 
     await browser.close();
 
-    console.log(data)
-
-    // getDocs(dbRef).then((snapshot) => {
-    //     let booksarr = []
-    //     snapshot.docs.forEach((doc) => {
-    //         booksarr.push({ ...doc.data() })
-    //     })
-    //     console.log(booksarr)
-    // })
 
 
     const reffff = doc(db, "news", `${today.toDateString()}`)
@@ -80,52 +72,29 @@ async function Start() {
     if (docSnap.exists()) {
         const dbRef = doc(db, 'news', `${today.toDateString()}`)
         await updateDoc(dbRef, {
-            CNN: arrayUnion({
-                img: `${data[0]}`,
-                headline: `${headline[0]}`
+            News_18: arrayUnion({
+                img: `${data1[0]}`,
+                headline: `${headline1[0]}`
+            }),
+            indiatoday: arrayUnion({
+                img: `${data2[0]}`,
+                headline: `${headline2[0]}`
             })
 
         })
     } else {
         await setDoc(doc(db, 'news', `${today.toDateString()}`), {
-            CNN: arrayUnion({
-                img: `${data[0]}`,
-                headline: `${headline[0]}`
+            News_18: arrayUnion({
+                img: `${data1[0]}`,
+                headline: `${headline1[0]}`
+            }),
+            indiatoday: arrayUnion({
+                img: `${data2[0]}`,
+                headline: `${headline2[0]}`
             })
 
         })
     }
-
-
-
-
-    // if (dbcurrentRef === dbcurrentRef) {
-    //     const dbRef = doc(db, 'news', `${today.toDateString()}`)
-    //     await updateDoc(dbRef, {
-    //         img: arrayUnion("new images")
-    //     })
-    // } else {
-    //     await setDoc(doc(db, 'news', `${today.toDateString()}`, 'CNN'), {
-    //         img: `${data[0]}`
-    //     })
-    // }
-
-
-
-
-
-
-
-
-
-    // const message = data[0];
-    // const imageRef = ref(storage, `/${today.toDateString()}/`)
-    // await uploadString(imageRef, message).then((snapshot) => {
-    //     console.log('Uploaded a raw string!');
-    // });
-    // await getDownloadURL(imageRef).then(url => console.log(url))
-    return data;
-
 
 }
 
